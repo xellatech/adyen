@@ -219,24 +219,29 @@ class CurlClient implements ClientInterface
 		throw new \Adyen\ConnectionException($msg, $errno);
 	}
 
-	/**
-	 * Handle result errors from Adyen
-	 *
-	 * @param $result
-	 * @param $logger
-	 * @throws \Adyen\AdyenException
-	 */
-	protected function handleResultError($result, $logger)
-	{
-		$decodeResult = json_decode($result, true);
-		if (isset($decodeResult['message']) && isset($decodeResult['errorCode'])) {
-			$logger->error($decodeResult['errorCode'] . ': ' . $decodeResult['message']);
-			throw new \Adyen\AdyenException($decodeResult['message'], $decodeResult['errorCode'], null,
-				$decodeResult['status'], $decodeResult['errorType']);
-		}
-		$logger->error($result);
-		throw new \Adyen\AdyenException($result);
-	}
+    /**
+     * Handle result errors from Adyen
+     *
+     * @param $result
+     * @param $logger
+     * @throws \Adyen\AdyenException
+     */
+    protected function handleResultError($result, $logger)
+    {
+        $decodeResult = json_decode($result, true);
+        if (isset($decodeResult['message']) && isset($decodeResult['errorCode'])) {
+            $pspRefMsg = '|pspReference:' . (isset($decodeResult['pspReference']) ? $decodeResult['pspReference'] : '');
+            $errorMsg = $decodeResult['message'] . $pspRefMsg;
+
+            $logger->error($decodeResult['errorCode'] . ': ' . $errorMsg);
+
+            throw new \Adyen\AdyenException($errorMsg, $decodeResult['errorCode'], null,
+                $decodeResult['status'], $decodeResult['errorType']);
+        }
+
+        $logger->error($result);
+        throw new \Adyen\AdyenException($result);
+    }
 
 	/**
 	 * Logs the API request, removing sensitive data
